@@ -1,0 +1,71 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: briefer
+  labels:
+    app: briefer
+spec:
+  ports:
+  - name: web
+    port: 80
+    protocol: TCP
+    targetPort: 3000
+  clusterIP: None
+  selector:
+    app: briefer
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: briefer
+spec:
+  selector:
+    matchLabels:
+      app: briefer
+  serviceName: "briefer"
+  replicas: 1
+  minReadySeconds: 10
+  template:
+    metadata:
+      labels:
+        app: briefer
+    spec:
+      terminationGracePeriodSeconds: 10
+      containers:
+      - name: briefer-all-in-one
+        image: briefercloud/briefer
+        ports:
+        - containerPort: 3000
+          name: web
+        volumeMounts:
+        - name: psql
+          mountPath: /var/lib/postgresql/data
+        - name: jupyter
+          mountPath: /home/jupyteruser
+        - name: data
+          mountPath: /home/briefer
+  volumeClaimTemplates:
+  - metadata:
+      name: psql
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: "my-storage-class"
+      resources:
+        requests:
+          storage: 1Gi
+  - metadata:
+      name: jupyter
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: "my-storage-class"
+      resources:
+        requests:
+          storage: 1Gi
+  - metadata:
+      name: data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: "my-storage-class"
+      resources:
+        requests:
+          storage: 10Gi
